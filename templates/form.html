@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Record Form</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #edf2f6;
+            color: #263747;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            color: #263747;
+            text-align: center;
+        }
+        form {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: block;
+        }
+        input, select, button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #5d7598;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        input:focus, select:focus, button:focus {
+            outline: none;
+            border-color: #263747;
+        }
+        button {
+            background-color: #263747;
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #5d7598;
+        }
+    </style>
+    <script>
+        // Function to confirm form submission
+        function confirmSubmission(event) {
+            // Show a confirmation dialog box
+            if (!confirm("Are you sure you want to submit this form?")) {
+                // If the user clicks "Cancel," prevent form submission
+                event.preventDefault();
+            }
+        }
+    </script>
+</head>
+<body>
+    <h1>Enter New Record Details</h1>
+
+    <!-- Form with submission confirmation -->
+    <form action="{{ url_for('submit') }}" method="post" onsubmit="confirmSubmission(event)">
+        <label for="sales_price">Sales Price:</label>
+        <input type="number" id="sales_price" name="sales_price" step="0.01" required>
+
+        <label for="subject_property_address">Subject Property Address:</label>
+        <input type="text" id="subject_property_address" name="subject_property_address" required>
+
+        <label for="property_tax">Property Tax Amount:</label>
+        <input type="number" id="property_tax" name="property_tax" step="0.01" required>
+
+        <label for="seller_incentives">Seller Incentives:</label>
+        <input type="number" id="seller_incentives" name="seller_incentives" step="0.01" required>
+
+        <label for="loan_program">Loan Program:</label>
+        <select id="loan_program" name="loan_program" multiple required>
+            <option value="Conforming" selected>Conforming</option>
+            <option value="FHA" selected>FHA</option>
+            <option value="VA" selected>VA</option>
+            <option value="USDA" selected>USDA</option>
+        </select>
+
+        <button type="submit">Submit</button>
+    </form>
+</body>
+</html>
