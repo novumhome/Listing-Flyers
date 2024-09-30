@@ -52,42 +52,97 @@
         button:hover {
             background-color: #5d7598;
         }
+        .error {
+            color: red;
+            margin-top: -15px;
+            margin-bottom: 15px;
+            display: none;
+        }
     </style>
     <script>
-        // Function to confirm form submission
         function confirmSubmission(event) {
-            // Show a confirmation dialog box
-            if (!confirm("Are you sure you want to submit this form?")) {
-                // If the user clicks "Cancel," prevent form submission
-                event.preventDefault();
+            event.preventDefault();
+            if (confirm("Are you sure you want to submit this form?")) {
+                document.getElementById("submitForm").submit();
             }
+        }
+
+        function validateForm() {
+            var salesPrice = document.getElementById("sales_price").value;
+            var address = document.getElementById("subject_property_address").value;
+            var propertyTax = document.getElementById("property_tax").value;
+            var sellerIncentives = document.getElementById("seller_incentives").value;
+            var loanProgram = document.getElementById("loan_program").value;
+
+            var isValid = true;
+
+            if (salesPrice === "" || isNaN(salesPrice) || parseFloat(salesPrice) <= 0) {
+                document.getElementById("sales_price_error").style.display = "block";
+                isValid = false;
+            } else {
+                document.getElementById("sales_price_error").style.display = "none";
+            }
+
+            if (address.trim() === "") {
+                document.getElementById("address_error").style.display = "block";
+                isValid = false;
+            } else {
+                document.getElementById("address_error").style.display = "none";
+            }
+
+            if (propertyTax === "" || isNaN(propertyTax) || parseFloat(propertyTax) < 0) {
+                document.getElementById("property_tax_error").style.display = "block";
+                isValid = false;
+            } else {
+                document.getElementById("property_tax_error").style.display = "none";
+            }
+
+            if (sellerIncentives === "" || isNaN(sellerIncentives) || parseFloat(sellerIncentives) < 0) {
+                document.getElementById("seller_incentives_error").style.display = "block";
+                isValid = false;
+            } else {
+                document.getElementById("seller_incentives_error").style.display = "none";
+            }
+
+            if (loanProgram === null || loanProgram.length === 0) {
+                document.getElementById("loan_program_error").style.display = "block";
+                isValid = false;
+            } else {
+                document.getElementById("loan_program_error").style.display = "none";
+            }
+
+            return isValid;
         }
     </script>
 </head>
 <body>
     <h1>Enter New Record Details</h1>
 
-    <!-- Form with submission confirmation -->
-    <form action="{{ url_for('submit') }}" method="post" onsubmit="confirmSubmission(event)">
+    <form id="submitForm" action="{{ url_for('submit') }}" method="post" onsubmit="return validateForm() && confirmSubmission(event)">
         <label for="sales_price">Sales Price:</label>
         <input type="number" id="sales_price" name="sales_price" step="0.01" required>
+        <div id="sales_price_error" class="error">Please enter a valid sales price greater than 0.</div>
 
         <label for="subject_property_address">Subject Property Address:</label>
         <input type="text" id="subject_property_address" name="subject_property_address" required>
+        <div id="address_error" class="error">Please enter a valid address.</div>
 
         <label for="property_tax">Property Tax Amount:</label>
         <input type="number" id="property_tax" name="property_tax" step="0.01" required>
+        <div id="property_tax_error" class="error">Please enter a valid property tax amount (0 or greater).</div>
 
         <label for="seller_incentives">Seller Incentives:</label>
         <input type="number" id="seller_incentives" name="seller_incentives" step="0.01" required>
+        <div id="seller_incentives_error" class="error">Please enter a valid seller incentives amount (0 or greater).</div>
 
         <label for="loan_program">Loan Program:</label>
         <select id="loan_program" name="loan_program" multiple required>
-            <option value="Conforming" selected>Conforming</option>
-            <option value="FHA" selected>FHA</option>
-            <option value="VA" selected>VA</option>
-            <option value="USDA" selected>USDA</option>
+            <option value="Conforming">Conforming</option>
+            <option value="FHA">FHA</option>
+            <option value="VA">VA</option>
+            <option value="USDA">USDA</option>
         </select>
+        <div id="loan_program_error" class="error">Please select at least one loan program.</div>
 
         <button type="submit">Submit</button>
     </form>

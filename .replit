@@ -17,7 +17,7 @@ externalPort = 5000
 
 [[ports]]
 localPort = 5432
-externalPort = 5432
+externalPort = 3000
 
 [env]
 FLASK_APP = "main.py"  # Set this appropriately if your entry point file is app.py

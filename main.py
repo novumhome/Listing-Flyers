@@ -1,16 +1,64 @@
-import psycopg2
-from flask import Flask, redirect, render_template, request, url_for
-import re  # Add this line to import the 're' module
-app = Flask(__name__)
+import sys
+print("Python version:", sys.version)
+print("Python path:", sys.path)
 
-# Database connection
-conn = psycopg2.connect(
-    dbname="neondb",
-    user="neondb_owner",
-    password="UM8IZK5nvSQf",
-    host="ep-shrill-bonus-a5jb4pas.us-east-2.aws.neon.tech",
-    port="5432"
-)
+import flask
+print("Flask version:", flask.__version__)
+
+import psycopg2
+from psycopg2 import pool
+from flask import Flask, redirect, render_template, request, url_for, send_file
+import re
+import tempfile
+import os
+import atexit
+from xhtml2pdf import pisa
+from io import BytesIO
+import logging
+import traceback
+
+print("All modules imported successfully")
+
+# Set up logging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+
+app = Flask(__name__)
+print("Flask app created")
+logging.info("Flask app initialized")
+
+# Create a connection pool
+try:
+    connection_pool = pool.SimpleConnectionPool(
+        1, 20,
+        dbname=os.getenv('PGDATABASE'),
+        user=os.getenv('PGUSER'),
+        password=os.getenv('PGPASSWORD'),
+        host=os.getenv('PGHOST'),
+        port=os.getenv('PGPORT')
+    )
+    logging.info("Database connection pool created successfully")
+except Exception as e:
+    logging.error(f"Failed to create connection pool: {str(e)}")
+    print(f"Failed to create connection pool: {str(e)}", file=sys.stderr)
+
+# Temporary directory to store PDFs
+TEMP_DIR = tempfile.mkdtemp()
+logging.info(f"Temporary directory created at {TEMP_DIR}")
+
+# Function to clean up temporary files
+def cleanup_temp_files():
+    for filename in os.listdir(TEMP_DIR):
+        file_path = os.path.join(TEMP_DIR, filename)
+        try:
+            if os.path.isfile(file_path) or os.path.islink(file_path):
+                os.unlink(file_path)
+                logging.info(f"Deleted temporary file: {file_path}")
+        except Exception as e:
+            logging.error(f'Failed to delete {file_path}. Reason: {e}')
+            print(f'Failed to delete {file_path}. Reason: {e}', file=sys.stderr)
+
+# Register the cleanup function to be called when the application exits
+atexit.register(cleanup_temp_files)
 
 # Custom filter to format currency
 @app.template_filter('format_currency')
@@ -25,92 +73,206 @@ state_mapping = {
 }
 
 def extract_state_from_address(address):
-    # Regular expression to find state abbreviation or full state name
     state_pattern = re.compile(r'\b(TX|OK|Texas|Oklahoma)\b', re.IGNORECASE)
     match = state_pattern.search(address)
 
     if match:
         state = match.group(0).strip().lower()
-        # Convert full state name to abbreviation if necessary
         return state_mapping.get(state, state.upper())
     else:
-        return None  # Handle case where no state is found
+        return None
+
+def check_db_connection():
+    global connection_pool
+    try:
+        conn = connection_pool.getconn()
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT 1")
+        connection_pool.putconn(conn)
+    except Exception as e:
+        logging.error(f"Database connection lost: {str(e)}")
+        # Attempt to recreate the connection pool
+        try:
+            connection_pool = pool.SimpleConnectionPool(
+                1, 20,
+                dbname=os.getenv('PGDATABASE'),
+                user=os.getenv('PGUSER'),
+                password=os.getenv('PGPASSWORD'),
+                host=os.getenv('PGHOST'),
+                port=os.getenv('PGPORT')
+            )
+            logging.info("Database connection pool recreated successfully")
+        except Exception as e:
+            logging.error(f"Failed to recreate connection pool: {str(e)}")
 
 @app.route('/')
+def home():
+    logging.info("Home route accessed")
+    return "Welcome to the home page. <a href='/form'>Go to form</a>"
+
+@app.route('/form')
 def form():
+    logging.info("Form route accessed")
     return render_template('form.html')
 
-@app.route('/submit', methods=['POST'])
-def submit():
-    sales_price = request.form['sales_price']
-    address = request.form['subject_property_address']
-    property_tax = request.form['property_tax']
-    seller_incentives = request.form['seller_incentives']
-
-    # Extract the state from the address
-    state = extract_state_from_address(address)
-
-    # Collect the selected loan programs from the form as a list
-    loan_programs = request.form.getlist('loan_program')
-
-    # Convert the list to a PostgreSQL array format
-    loan_programs_array = '{' + ','.join(loan_programs) + '}'
-
-    cursor = conn.cursor()
-
-    insert_query = """
-    INSERT INTO new_record (
-        sales_price,
-        subject_property_address,
-        property_tax_amount,
-        seller_incentives,
-        loan_programs,
-        state
-    )
-    VALUES (%s, %s, %s, %s, %s, %s)
-    RETURNING record_id
-"""
-
+def html_to_pdf(html_content):
+    pdf_buffer = BytesIO()
     try:
-        cursor.execute(insert_query, (sales_price, address, property_tax, seller_incentives, loan_programs_array, state))
-        record_id = cursor.fetchone()[0]
-        conn.commit()
-        print("Record inserted successfully.")
-
-        # Fetch all loan_scenario_results for the given record_id
-        select_results_query = """
-        SELECT loan_program_code, total_loan_amount, amount_needed_to_purchase, total_payment,
-               interest_rate, apr, discount_points_percent
-        FROM loan_scenario_results
-        WHERE record_id = %s
-        """
-        cursor.execute(select_results_query, (record_id,))
-        raw_results = cursor.fetchall()
-
-        # Structure the data into a dictionary
-        results = {}
-        for row in raw_results:
-            loan_program_code = row[0]
-            results[loan_program_code] = {
-                'loan_amount': row[1],
-                'amount_needed_to_purchase': row[2],
-                'total_payment': row[3],
-                'interest_rate': row[4],
-                'apr': row[5],
-                'discount_points_percent': row[6]
-            }
-
-        # Render the results to the staging_output_file.html template
-        return render_template('staging_output_file.html', results=results)
-
+        pisa_status = pisa.CreatePDF(html_content, dest=pdf_buffer)
+        if not pisa_status.err:
+            pdf_buffer.seek(0)
+            logging.info("PDF generated successfully")
+            return pdf_buffer
+        else:
+            logging.error(f"PDF generation failed: {pisa_status.err}")
     except Exception as e:
-        print(f"Error inserting record or processing scenarios: {e}")
-        conn.rollback()
-    finally:
-        cursor.close()
+        logging.error(f"Error in PDF generation: {str(e)}")
+    return None
 
-    return redirect(url_for('form'))
+@app.route('/submit', methods=['GET', 'POST'])
+def submit():
+    check_db_connection()
+    logging.info(f"Submit route accessed with method: {request.method}")
+    print(f"Submit route accessed with method: {request.method}", file=sys.stderr)
+    
+    if request.method == 'POST':
+        logging.info("Processing POST request")
+        logging.info("Form data: %s", request.form)
+        logging.info("Request headers: %s", request.headers)
+        
+        try:
+            sales_price = request.form['sales_price']
+            address = request.form['subject_property_address']
+            property_tax = request.form['property_tax']
+            seller_incentives = request.form['seller_incentives']
 
+            logging.info(f"Received form data: sales_price={sales_price}, address={address}, property_tax={property_tax}, seller_incentives={seller_incentives}")
+            print(f"Received form data: sales_price={sales_price}, address={address}, property_tax={property_tax}, seller_incentives={seller_incentives}", file=sys.stderr)
+
+            state = extract_state_from_address(address)
+            loan_programs = request.form.getlist('loan_program')
+            loan_programs_array = '{' + ','.join(loan_programs) + '}'
+
+            logging.info(f"Extracted state: {state}, loan_programs: {loan_programs_array}")
+
+            conn = connection_pool.getconn()
+            try:
+                with conn.cursor() as cursor:
+                    insert_query = """
+                    INSERT INTO new_record (
+                        sales_price,
+                        subject_property_address,
+                        property_tax_amount,
+                        seller_incentives,
+                        loan_programs,
+                        state
+                    )
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    RETURNING record_id
+                    """
+
+                    logging.info("About to execute database insert")
+                    cursor.execute(insert_query, (sales_price, address, property_tax, seller_incentives, loan_programs_array, state))
+                    record_id = cursor.fetchone()[0]
+                    
+                    select_results_query = """
+                    SELECT loan_program_code, total_loan_amount, amount_needed_to_purchase, total_payment,
+                           interest_rate, apr, discount_points_percent
+                    FROM loan_scenario_results
+                    WHERE record_id = %s
+                    """
+                    cursor.execute(select_results_query, (record_id,))
+                    raw_results = cursor.fetchall()
+
+                conn.commit()
+                logging.info(f"Record inserted successfully. Record ID: {record_id}")
+            except psycopg2.Error as db_error:
+                conn.rollback()
+                logging.error(f"Database error: {str(db_error)}")
+                return f"A database error occurred: {str(db_error)}", 500
+            finally:
+                connection_pool.putconn(conn)
+
+            results = {}
+            for row in raw_results:
+                loan_program_code = row[0]
+                results[loan_program_code] = {
+                    'loan_amount': row[1],
+                    'amount_needed_to_purchase': row[2],
+                    'total_payment': row[3],
+                    'interest_rate': row[4],
+                    'apr': row[5],
+                    'discount_points_percent': row[6]
+                }
+
+            html_content = render_template('staging_output_file.html', results=results)
+            
+            try:
+                pdf_buffer = html_to_pdf(html_content)
+                if pdf_buffer:
+                    pdf_filename = f'loan_scenario_results_{record_id}.pdf'
+                    pdf_path = os.path.join(TEMP_DIR, pdf_filename)
+                    with open(pdf_path, 'wb') as f:
+                        f.write(pdf_buffer.getvalue())
+                    logging.info(f"PDF saved to {pdf_path}")
+                    return render_template('staging_output_file.html', results=results, pdf_filename=pdf_filename)
+                else:
+                    raise Exception("PDF generation failed")
+            except Exception as e:
+                logging.error(f"Error generating PDF: {e}")
+                print(f"Error generating PDF: {e}", file=sys.stderr)
+                # If PDF generation fails, return the HTML version
+                return render_template('staging_output_file.html', results=results)
+
+        except Exception as e:
+            logging.error(f"Error in submit route: {str(e)}", exc_info=True)
+            print(f"Error in submit route: {str(e)}", file=sys.stderr)
+            traceback.print_exc(file=sys.stderr)
+            return f"An error occurred: {str(e)}", 500
+
+    else:
+        return "This is the GET request to the submit route. Use POST to submit the form."
+
+@app.route('/download_pdf/<pdf_filename>')
+def download_pdf(pdf_filename):
+    logging.info(f"Attempting to download PDF: {pdf_filename}")
+    return send_file(os.path.join(TEMP_DIR, pdf_filename),
+                     as_attachment=True,
+                     download_name='loan_scenario_results.pdf')
+
+@app.route('/test')
+def test():
+    logging.info("Test route accessed")
+    return "Test route working"
+
+@app.route('/test_post', methods=['GET', 'POST'])
+def test_post():
+    if request.method == 'POST':
+        logging.info("POST request received at /test_post")
+        return "POST request received"
+    else:
+        logging.info("GET request received at /test_post")
+        return '''
+        <form method="post">
+            <input type="submit" value="Test POST">
+        </form>
+        '''
+
+@app.errorhandler(404)
+def page_not_found(e):
+    logging.error(f"404 error: {request.url}")
+    return "404 - Page Not Found", 404
+
+@app.errorhandler(405)
+def method_not_allowed(e):
+    logging.error(f"405 error: {request.method} {request.url}")
+    return "405 - Method Not Allowed", 405
+
+@app.errorhandler(Exception)
+def handle_exception(e):
+    logging.error(f"Unhandled exception: {str(e)}", exc_info=True)
+    return "An internal error occurred", 500
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    logging.info("Starting Flask application")
+    app.run(host='0.0.0.0', debug=True)

@@ -84,6 +84,19 @@
             margin-top: -40px;
             margin-bottom: 36px;
         }
+        
+        .download-btn {
+            display: block;
+            width: 200px;
+            margin: 20px auto;
+            padding: 10px;
+            text-align: center;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        
     </style>
 </head>
 <body>
@@ -382,26 +395,15 @@
             </table>
         </div>
 
+        
     </div>
-    <button id="download-png">Download as PNG</button>
-    <script>
-    document.getElementById('download-png').addEventListener('click', function() {
-        console.log("Download button clicked!");  // Add this line to confirm the click is being captured
 
-        var container = document.querySelector('.container');
-        html2canvas(container).then(function(canvas) {
-            console.log("Canvas created!");  // Add this line to confirm the canvas is being created
-
-            var link = document.createElement('a');
-            link.download = 'loan-scenario.png';
-            link.href = canvas.toDataURL();
-            link.click();
-        }).catch(function(error) {
-            console.error("Error creating canvas:", error);  // Catch and log any errors during the canvas creation
-            console.log(container);  // Add this inside your event listener to see if the container is selected
-
-        });
-    });
+    <a href="{{ url_for('download_pdf', pdf_filename=pdf_filename) }}" class="download-btn" id="download-pdf">Download PDF</a>
+<script>
+document.getElementById('download-pdf').addEventListener('click', function(event) {
+    console.log("Download PDF button clicked!");
+    // The default behavior (downloading the PDF) will occur
+});
 </script>
 </body>
 </html>

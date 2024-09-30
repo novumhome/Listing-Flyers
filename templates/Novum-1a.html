@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Novum</title>
+<style>
+/* Basic styling */
+body {
+    font-family: Poppins, sans-serif;
+    font-size: 16px;
+    color: #000000;
+    width: 1148px;
+    margin: 0;
+    padding: 0;
+    background-image: url("images/full_bg.jpg");
+    background-repeat: no-repeat;
+    line-height: 10px;
+/*  	background-color: red;  */  
+}
+
+h1, h2 {
+    text-align: center;
+}
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+th, td {
+    border: 4px solid #fff;
+    background-color: #f6f6f6;
+    padding: 0px;
+    text-align: center;
+}
+th{
+    background-color: #e2e6ef !important;
+    font-size: .8em;
+    padding:10px;
+}
+
+#table-container{
+	position:absolute;
+	top: 440px;
+	left: 0px;
+/* 	background-color: blue; */
+}
+#lower_rate_table, #higher_rate_table {
+    margin: 0px 40px;
+    width: 1068px;
+    
+}
+#higher_rate_table {
+	margin-top:40px;	
+}
+	
+#lower_rate_table h1, , #higher_rate_table h1 {
+	text-transform: uppercase;
+	font-weight: bold;
+}
+header {
+    background-size:auto;
+    background-repeat: no-repeat;
+    justify-content: space-between;
+}
+#address {
+	width: 1068px; 
+	height: 100px;  
+	position:absolute;
+	top: 320px;
+	padding-left:40px;
+    clear: both; /* Clear floats */
+}
+#address textarea {
+  width: 100%;
+  height: 100%;
+  resize: none;
+  font-size: 60px;
+  font-weight:bold;
+  text-align:left;
+  text-transform: uppercase;
+  color:#ffffff;
+  background-color: transparent;
+  border: none;
+  outline: none;
+}
+#loanamount {
+	position:absolute;
+	top: 40px;
+	left: 0px;
+	color:#fff;
+/* 	background-color: red; */
+	font-size:60px;
+    clear: both; /* Clear floats */
+    width: 1128px;
+}
+#loanamount h2 {
+    text-align: right !important;    
+    height:100px;
+    margin:20px;
+}
+
+footer{
+	position:absolute;
+	top: 1376px;
+	left: 0px;
+	background-color: #29333f;
+	width:1148px;
+	height:80px;
+}
+.footer_icon{
+	position:absolute;
+	top: 0px;
+	left: 0px;
+	margin: 0px 0px 10px 20px;
+}
+.footer_text{
+	position:absolute;
+	top: 0px;
+	left: 0px;
+	margin: 20px 80px 10px 120px;
+	color:#ffffff;
+	font-size: 11px;
+	line-height: 1.4em;
+}
+.highlight{
+	color: green;
+}
+.subtable{
+	font-size:.8em;
+	line-height: .8em;
+}
+#agent_row{
+	position:absolute;
+	top:620px;
+}
+#agent_row td{
+	text-align:right;
+}
+@media print {
+  @page {
+    size: 8.5in 11in;
+/*     margin: 0.5in;  */
+    margin: 0; 
+  }
+}
+</style>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+  $('#address textarea').on('input', function() {
+    var textarea = $(this);
+    var fontSize = textarea.css('font-size').replace('px', '');
+
+    // Adjust font size based on the number of lines of text
+    var lines = textarea.val().split('\n').length;
+    if (lines > 3) {
+      fontSize = fontSize - 2; // Decrease font size by 2px for each additional line
+    }
+
+    textarea.css('font-size', fontSize + 'px');
+  });
+});
+
+</script>
+</head>
+<body>
+
+<header>
+<div id="loanamount">
+<h2>$500,000</h2>
+</div>
+</header>
+
+<div id="address">
+<textarea name="address_text" rows="1" cols="1" placeholder="">123 Miracle on 34th St.</textarea>
+</div>
+
+<div id="table-container">
+<div id="lower_rate_table">
+	<h1>Lower Rate & More Cash-To-Close</h1>
+<table>
+<tr>
+<th style="background-color: transparent !important;"></th>
+<th>Conventional 20% Down</th>
+<th>Conventional 5% Down</th>
+<th>FHA 3.5% Down</th>
+<th>VA 0% Down</th>
+</tr>
+<tr>
+<td style="background-color: transparent">
+<p>Loan Amount</p>
+<p>Amount Needed to Purchase</p>
+<p>Monthly Payment (PITI & HOA)</p>
+</td>
+<td><p><b>$212,000</b></p>
+	<p class="highlight"><b>$59,610</b></p>
+	<p class="highlight"><b>$1,610</b></p>
+</td>
+<td><p><b>$251,750</b></p>
+	<p class="highlight"><b>$23,186</b></p>
+	<p class="highlight"><b>$1,896</b></p>
+</td>
+<td><p><b>$260,200</b></p>
+	<p class="highlight"><b>$17,156</b></p>
+	<p class="highlight"><b>$1,902</b></p>
+</td>
+<td><p><b>$271,095</b></p>
+	<p class="highlight"><b>$8,849</b></p>
+	<p class="highlight"><b>$1,841</b></p>
+</td>
+</tr>
+<tr>
+<td class="subtable" style="background-color: transparent">
+	<p>Interest Rate</p>
+	<p>APR</p>
+	<p>Points</p>
+</td>
+<td class="subtable">
+	<p>5.500%</p>
+	<p>5.926%</p>
+	<p>3.056%</p>
+</td>
+<td class="subtable">
+	<p>5.500%</p>
+	<p>6.200%</p>
+	<p>2.992%</p>
+</td>
+<td class="subtable">
+	<p>4.875%</p>
+	<p>5.813%</p>
+	<p>2.927%</p>
+</td>
+<td class="subtable">
+	<p>4.875%</p>
+	<p>5.266%</p>
+	<p>3.146%</p>
+</td>
+</tr>
+</table>
+</div>
+
+
+<div id="higher_rate_table">
+	<h1>Higher Rate & Less Cash-To-Close</h1>
+<table>
+<tr>
+<th style="background-color: transparent !important;"></th>
+<th>Conventional 20% Down</th>
+<th>Conventional 5% Down</th>
+<th>FHA 3.5% Down</th>
+<th>VA 0% Down</th>
+</tr>
+<tr>
+<td style="background-color: transparent">
+<p>Loan Amount</p>
+<p>Amount Needed to Purchase</p>
+<p>Monthly Payment (PITI & HOA)</p>
+</td>
+<td><p><b>$212,000</b></p>
+	<p class="highlight"><b>$53,308</b></p>
+	<p class="highlight"><b>$1,746</b></p>
+</td>
+<td><p><b>$251,750</b></p>
+	<p class="highlight"><b>$16,194</b></p>
+	<p class="highlight"><b>$2,080</b></p>
+</td>
+<td><p><b>$260,200</b></p>
+	<p class="highlight"><b>$10,113</b></p>
+	<p class="highlight"><b>$2,106</b></p>
+</td>
+<td><p><b>$271,095</b></p>
+	<p class="highlight"><b>$903</b></p>
+	<p class="highlight"><b>$2,052</b></p>
+</td>
+</tr>
+<tr>
+<td class="subtable" style="background-color: transparent">
+	<p>Interest Rate</p>
+	<p>APR</p>
+	<p>Points</p>
+</td>
+<td class="subtable">
+	<p>6.500%</p>
+	<p>6.671%</p>
+	<p>-</p>
+</td>
+<td class="subtable">
+	<p>6.500%</p>
+	<p>5.926%</p>
+	<p>-</p>
+</td>
+<td class="subtable">
+	<p>4.875%</p>
+	<p>5.926%</p>
+	<p>-</p>
+</td>
+<td class="subtable">
+	<p>5.500%</p>
+	<p>5.926%</p>
+	<p>-</p>
+</td>
+</tr>
+</table>
+</div>
+<div id="agent_row">
+<table>
+<tr>
+<td style="width:400px; background-color: transparent">
+</td>
+<td>
+<img src="images/agent-austin.jpg" width="356px"/>
+</td>
+<td>
+<img src="images/agent-don.jpg" width="356px"/>
+</td>
+</tr>
+</table>
+</div>
+</div>
+
+<footer>
+<div class="footer_icon">
+	<img src="images/icon-house.png" width="80px">
+</div>
+<div class="footer_text">
+Novum Home Loans LLC NMLS #2487386 | Branch NMLS #2561690 8126 S. Mingo Rd. Ste 200, Tulsa, OK 74133 Licensed in AR, OK, TX | For information purposes only. Rates effective as of 06/17/24 & are subject to change without notice. This is not a commitment to lend or extend credit. Scenarios are based on a 740 credit score, and a 41% DTI. VA scenarios are based on 1st time use and no VA disability rating.  Equal Housing Opportunity. 
+</div>
+</footer>
+
+</body>
+</html>
